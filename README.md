@@ -25,6 +25,7 @@ A desktop GUI for simulating iPhone GPS location through a local tunnel connecti
 Before running the app, make sure you have:
 
 - Python 3.10+
+- Internet connection for loading the map
 - An iPhone/iPad supported by `pymobiledevice3`
 - A trusted USB connection between the device and your computer
 - **Developer Mode enabled on the iPhone**
@@ -61,12 +62,19 @@ git clone https://github.com/BjornS98/IOS-Location-spoofer.git
 cd IOS-Location-spoofer
 python -m venv .venv
 
-````md
+````
 
 ## Screenshots
+
 ### Main Window
-![Main Window](Assets/screenshots/UILight.png)
-![Main Window](Assets/screenshots/UIDark.png)
+
+<p align="center">
+  <img src="Assets/screenshots/UILight.png" alt="Main Window Light" width="45%" />
+  <img src="Assets/screenshots/UIDark.png" alt="Main Window Dark" width="45%" />
+</p>
 
 ### Settings
-![Route Playback](Assets/screenshots/Settings.png)
+
+<p align="center">
+  <img src="Assets/screenshots/Settings.png" alt="Settings" width="70%" />
+</p>
