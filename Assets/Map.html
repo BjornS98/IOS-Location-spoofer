@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>GPS Spoofer Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.7.3/nipplejs.min.js"></script>
+  <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+  <style>
+    html, body { margin: 0; height: 100%; }
+    #map { width: 100%; height: 100%; position: relative; }
+    #joystick {
+      position: absolute; bottom: 60px; right: 60px;
+      width: 160px; height: 160px; display: none; z-index: 1000;
+      background: rgba(255,255,255,0.3); border: 3px solid rgba(0,0,0,0.5);
+      border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      touch-action: none;
+    }
+    #searchContainer {
+      position: absolute; top: 10px; left: 50px; z-index: 1000;
+      background: white; padding: 5px; border-radius: 4px; display: block;
+    }
+    #suggestions {
+      position: absolute; background: white; border: 1px solid #ccc;
+      display: none; max-height: 150px; overflow: auto;
+      width: calc(100% - 10px); margin-top: 5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); z-index: 1001;
+      font-family: sans-serif; font-size: 14px;
+    }
+    #confirmModal {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); z-index: 2000;
+      justify-content: center; align-items: center;
+    }
+    #confirmModal > div {
+      background: white; padding: 15px 20px; border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-width: 300px;
+      font-family: sans-serif;
+    }
+    #map {
+      backface-visibility: hidden;
+      transform: translateZ(0); /* triggers GPU acceleration */
+    }
+
+    #settings {
+      position: absolute;
+      top: 60px;
+      left: 50px;
+      z-index: 1000;
+      background: white;
+      color: #000;
+      padding: 8px 12px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      font-family: sans-serif;
+      font-size: 14px;
+    }
+
+    #settings input,
+    #settings button {
+      margin-top: 5px;
+      padding: 5px;
+      font-size: 13px;
+    }
+
+    body.dark {
+      background-color: #1e1e1e;
+      color: #ddd;
+    }
+
+    body.dark #searchBox {
+      background-color: #1e1e1e;
+      color: #eee;
+      border: 1px solid #444;
+    }
+
+    body.dark #searchBox::placeholder {
+      color: #888;
+    }
+
+    body.dark #searchContainer button {
+      background-color: #444;
+      color: #eee;
+      border: 1px solid #666;
+    }
+
+    body.dark #searchContainer button:hover {
+      background-color: #555;
+    }
+
+    body.dark #searchContainer {
+      background: #2c2c2c;
+      color: #eee;
+    }
+
+    body.dark #suggestions div {
+      background: #333;
+      color: #fff;
+    }
+
+    body.dark #suggestions div:hover {
+      background: #444 !important;
+    }
+
+    body.dark #confirmModal button {
+      background-color: #444;
+      color: #eee;
+      border: 1px solid #666;
+    }
+
+    body.dark #confirmModal button:hover {
+      background-color: #555;
+    }
+
+    body.dark #confirmModal > div {
+      background: #2c2c2c;
+      color: #ddd;
+      border: 1px solid #444;
+    }
+
+    body.dark #joystick {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.7);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+
+    .suggestion-item {
+      padding: 4px;
+      cursor: pointer;
+    }
+
+    body:not(.dark) .suggestion-item:hover {
+      background: #eee;
+    }
+
+    body.dark .suggestion-item {
+      background: #333;
+      color: #fff;
+    }
+
+    body.dark .suggestion-item:hover {
+      background: #444;
+    }
+
+    .leaflet-container {
+      background: #1e1e1e; /* for dark mode */
+    }
+
+    body:not(.dark) .leaflet-container {
+      background: #f0f0f0; /* optional for light mode */
+    }
+
+    body.dark #settings {
+      background: #2c2c2c;
+      color: #eee;
+      border: 1px solid #444;
+    }
+
+    body.dark #settings input,
+    body.dark #settings button {
+      background-color: #444;
+      color: #eee;
+      border: 1px solid #666;
+    }
+
+    body.dark #settings button:hover {
+      background-color: #555;
+    }
+
+    .leaflet-container {
+      background-color: transparent !important;
+      outline: none !important;
+      margin: 0;
+      padding: 0;
+      transform: translateZ(0); /* triggers GPU acceleration */
+    }
+
+    .leaflet-tile {
+      width: 256px !important;       /* force tile size */
+      height: 256px !important;
+      border: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
+      image-rendering: auto;
+    }
+
+    .leaflet-pane,
+    .leaflet-tile-pane,
+    .leaflet-map-pane {
+      background: transparent !important;
+    }
+
+    .leaflet-tile.no-grid-tiles {
+      border: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="joystick"></div>
+  <div id="searchContainer">
+    <div style="display: flex; gap: 5px; align-items: center;">
+      <input id="searchBox" type="text" placeholder="Search location" style="flex: 1; min-width: 200px;">
+      <button onclick="searchLocation()">Search</button>
+    </div>
+    <div id="suggestions" style="
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      display: none;
+      max-height: 150px;
+      overflow: auto;
+      width: calc(100% - 10px);
+      margin-top: 5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      z-index: 1001;
+      font-family: sans-serif;
+      font-size: 14px;
+    "></div>
+
+  </div>
+  <div id="confirmModal">
+    <div>
+      <div id="confirmText" style="margin-bottom:15px;"></div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button id="confirmNo">Cancel</button>
+        <button id="confirmYes" style="margin-left: 8px;">Teleport</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let map, marker, routeLayer, joystickManager;
+    let lastVector = { x: 0, y: 0 };
+    let walkSpeed = 5.0; // to be overridden from Python
+    let startLat = 48.8584; // to be overridden from Python
+    let startLon = 2.2945;  // to be overridden from Python
+    const joystickDt = 0.1;
+    let joystickInterval;
+    let drawing = false;
+    let routePoints = [];
+    let baseLayer;
+
+    function initMap() {
+      map = L.map('map', { maxZoom: 19 }).setView([startLat, startLon], 19);
+
+      // Initialize with light tiles
+      baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+        tileSize: 256,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        keepBuffer: 4,
+        opacity: 0.8,
+        className: 'no-grid-tiles',
+        attribution: '&copy; OpenStreetMap contributors'
+      });
+      baseLayer.addTo(map);
+
+      marker = L.marker([startLat, startLon], { draggable: true }).addTo(map);
+      marker.on('dragend', e => {
+        const p = e.target.getLatLng();
+        window.bridge.sendCoordinates(p.lat, p.lng);
+      });
+
+      routeLayer = L.polyline([], { color: 'blue' }).addTo(map);
+
+      map.on("contextmenu", function (e) {
+        const lat = e.latlng.lat.toFixed(5);
+        const lon = e.latlng.lng.toFixed(5);
+        showConfirmation(`Teleport to right-clicked location?\n(${lat}, ${lon})`, () => {
+          window.bridge.pauseRouteIfActive();
+          marker.setLatLng([e.latlng.lat, e.latlng.lng]);
+          window.bridge.sendCoordinates(e.latlng.lat, e.latlng.lng);
+        });
+      });
+    }
+
+    function initJoystick() {
+      const isDark = document.body.classList.contains('dark');
+      joystickManager = nipplejs.create({
+        zone: document.getElementById('joystick'),
+        mode: 'static',
+        position: { left: '80px', top: '80px' },
+        size: 140,
+        color: isDark ? '#ffffff' : '#333333'
+      });
+      joystickManager.on('start', () => {
+        lastVector = { x: 0, y: 0 };
+        joystickInterval = setInterval(moveByJoystick, joystickDt * 1000);
+      });
+      joystickManager.on('move', (evt, data) => {
+        const angle = (data.angle && data.angle.radian) || 0;
+        const dist = data.distance || 0;
+        const max = data.instance.options.size / 2;
+        const norm = dist / max || 0;
+        lastVector.x = norm * Math.cos(angle);
+        lastVector.y = norm * Math.sin(angle);
+      });
+      joystickManager.on('end', () => {
+        clearInterval(joystickInterval);
+        lastVector = { x: 0, y: 0 };
+      });
+    }
+
+    function destroyJoystick() {
+      if (joystickManager) {
+        joystickManager.destroy();
+        joystickManager = null;
+      }
+    }
+
+    function moveByJoystick() {
+      if (window.routeActive) return;
+      const { x: v, y: v2 } = lastVector;
+      if (!v && !v2) return;
+
+      const dist = walkSpeed * joystickDt / 3600;
+      const dLat = v2 * dist / 111.32;
+      const latRad = marker.getLatLng().lat * Math.PI / 180;
+      const dLon = v * dist / (111.32 * Math.cos(latRad));
+
+      const ll = marker.getLatLng();
+      const newLat = ll.lat + dLat;
+      const newLon = ll.lng + dLon;
+      marker.setLatLng([newLat, newLon]);
+      window.bridge.sendCoordinates(newLat, newLon);
+    }
+
+    function toggleJoystick(show) {
+      const js = document.getElementById('joystick');
+      js.style.display = show ? 'block' : 'none';
+      if (show && !joystickManager) initJoystick();
+    }
+
+    function enableRouteSelection() {
+      drawing = true;
+      routeLayer.setLatLngs([]);
+      map.on('click', onMapClick);
+    }
+
+    function onMapClick(e) {
+      if (!drawing) return;
+      const { lat, lng } = e.latlng;
+      routePoints.push([lat, lng]);
+      routeLayer.addLatLng([lat, lng]);
+      window.bridge.addRoutePoint(lat, lng);
+    }
+
+    function disableRouteSelection() {
+      drawing = false;
+      map.off('click', onMapClick);
+    }
+
+    function clearRouteLine() {
+      // Clear the loaded route
+      if (window.routePolyline) {
+        window.routePolyline.setLatLngs([]);
+      }
+
+      // Clear the manually drawn route
+      if (typeof routeLayer !== 'undefined' && routeLayer) {
+        routeLayer.setLatLngs([]);
+      }
+
+      // Clear routePoints used during drawing
+      routePoints = [];
+
+      // Notify Python to clear its route state
+      if (window.bridge && window.bridge.clearRouteInPython) {
+        window.bridge.clearRouteInPython();
+      }
+    }
+
+    function drawRouteFromPython(routePoints) {
+        if (!window.routePolyline) {
+            window.routePolyline = L.polyline([], { color: 'blue' }).addTo(map);
+        }
+        const latlngs = routePoints.map(pt => L.latLng(pt[0], pt[1]));
+        window.routePolyline.setLatLngs(latlngs);
+    }
+
+    function clearRouteLine() {
+      if (window.routePolyline) {
+        window.routePolyline.setLatLngs([]);
+      }
+      routePoints = [];
+    }
+    
+    function showConfirmation(message, onConfirm = null) {
+      const modal = document.getElementById("confirmModal");
+      const text = document.getElementById("confirmText");
+      const yesBtn = document.getElementById("confirmYes");
+      const noBtn = document.getElementById("confirmNo");
+
+      text.textContent = message;
+      modal.style.display = "flex";
+      yesBtn.style.display = onConfirm ? "inline-block" : "none";
+
+      function cleanup() {
+        modal.style.display = "none";
+        yesBtn.removeEventListener("click", confirmAction);
+        noBtn.removeEventListener("click", cancelAction);
+        document.removeEventListener("keydown", keyHandler);
+      }
+
+      function confirmAction() {
+        cleanup();
+        if (onConfirm) onConfirm();
+      }
+
+      function cancelAction() {
+        cleanup();
+      }
+
+      function keyHandler(e) {
+        if (modal.style.display !== "flex") return;  // extra guard
+        if (e.key === "Escape") {
+          e.preventDefault();
+          cancelAction();
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          confirmAction();
+        }
+      }
+
+      // Attach listeners
+      yesBtn.addEventListener("click", confirmAction);
+      noBtn.addEventListener("click", cancelAction);
+      document.addEventListener("keydown", keyHandler);
+    }
+
+    function searchLocation() {
+      const query = document.getElementById("searchBox").value;
+      if (!query) return;
+
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+            const name = data[0].display_name;
+            showConfirmation(`Teleport to:\n${name}\n(${lat.toFixed(5)}, ${lon.toFixed(5)})?`, () => {
+              window.bridge.pauseRouteIfActive();
+              marker.setLatLng([lat, lon]);
+              window.bridge.sendCoordinates(lat, lon);
+            });
+          } else {
+            showConfirmation("⚠️ Location not found.");
+          }
+        })
+        .catch(err => {
+          console.error("Search error:", err);
+          showConfirmation("⚠️ Failed to search location.");
+        });
+    }
+
+    function updateSuggestions(query) {
+      const sugDiv = document.getElementById("suggestions");
+      if (!query) {
+        sugDiv.style.display = "none";
+        return;
+      }
+
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`)
+        .then(res => res.json())
+        .then(data => {
+          sugDiv.innerHTML = "";
+          if (!data.length) {
+            sugDiv.style.display = "none";
+            return;
+          }
+          data.forEach(place => {
+            const item = document.createElement("div");
+            item.textContent = place.display_name;
+            item.classList.add("suggestion-item");
+            item.onclick = () => {
+              const lat = parseFloat(place.lat);
+              const lon = parseFloat(place.lon);
+              const name = place.display_name;
+
+              showConfirmation(`Teleport to:\n${name}\n(${lat.toFixed(5)}, ${lon.toFixed(5)})?`, () => {
+                window.bridge.pauseRouteIfActive();
+                document.getElementById("searchBox").value = name;
+                sugDiv.style.display = "none";
+                marker.setLatLng([lat, lon]);
+                window.bridge.sendCoordinates(lat, lon);
+              });
+            };
+
+            sugDiv.appendChild(item);
+          });
+          sugDiv.style.display = "block";
+        })
+        .catch(err => {
+          console.error("Autocomplete error:", err);
+          sugDiv.style.display = "none";
+        });
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    function setDarkMode(enabled) {
+      document.body.classList.toggle("dark", enabled);
+
+      const mapElement = document.getElementById("map");
+
+      if (enabled) {
+        mapElement.style.filter = "invert(1) hue-rotate(180deg)";
+        mapElement.style.backgroundColor = "#1e1e1e"; // fallback background
+      } else {
+        mapElement.style.filter = "none";
+        mapElement.style.backgroundColor = "white";
+      }
+
+        // Recreate joystick if it is visible
+        const js = document.getElementById('joystick');
+        if (js.style.display === 'block') {
+          destroyJoystick();
+          initJoystick();
+        }
+    }
+
+    new QWebChannel(qt.webChannelTransport, function(channel) {
+      window.bridge = channel.objects.bridge;
+      window.routeActive = false;
+
+      const searchBox = document.getElementById("searchBox");
+      if (searchBox) {
+        searchBox.addEventListener("input", debounce(e => {
+          updateSuggestions(e.target.value);
+        }, 300));
+      }
+
+      // initMap() will be called from Python after setting walkSpeed/startLat/startLon
+    });
+  </script>
+</body>
+</html>
