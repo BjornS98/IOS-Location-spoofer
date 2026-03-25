@@ -8,17 +8,6 @@
 
 A desktop GUI for simulating iPhone GPS location through a local tunnel connection, built with **PyQt5**, **Qt WebEngine**, and **pymobiledevice3**.
 
-## Screenshots
-
-> Replace these placeholder images with real app screenshots later if you want.
-
-### Main Window
-![Main Window](Assets/screenshots/UILight.png)
-![Main Window](Assets/screenshots/UIDark.png)
-
-### Settings
-![Route Playback](Assets/screenshots/Settings.png)
-
 ## Features
 
 - Interactive map-based location control
@@ -71,3 +60,11 @@ This project relies on development-style device services. On modern iOS versions
 git clone https://github.com/BjornS98/IOS-Location-spoofer.git
 cd IOS-Location-spoofer
 python -m venv .venv
+
+## Screenshots
+### Main Window
+![Main Window](Assets/screenshots/UILight.png)
+![Main Window](Assets/screenshots/UIDark.png)
+
+### Settings
+![Route Playback](Assets/screenshots/Settings.png)
