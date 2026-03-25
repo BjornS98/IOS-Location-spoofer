@@ -1,15 +1,23 @@
-# IOS Spoofer 
+# IOS Spoofer
+
+<p align="center">
+  <a href="https://buymeacoffee.com/bjorns98">
+    <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-yellow?style=for-the-badge" alt="Buy Me a Coffee" />
+  </a>
+</p>
 
 A desktop GUI for simulating iPhone GPS location through a local tunnel connection, built with **PyQt5**, **Qt WebEngine**, and **pymobiledevice3**.
 
-The app provides:
+## Screenshots
 
-- an interactive map
-- manual joystick-style movement with arrow keys
-- adjustable walking speed
-- route recording and playback
-- tunnel discovery for connected devices
-- start/stop location simulation over Apple remote services
+> Replace these placeholder images with real app screenshots later if you want.
+
+### Main Window
+![Main Window](Assets/screenshots/UILight.png)
+![Main Window](Assets/screenshots/UIDark.png)
+
+### Settings
+![Route Playback](Assets/screenshots/Settings.png)
 
 ## Features
 
@@ -60,8 +68,6 @@ This project relies on development-style device services. On modern iOS versions
 ## Installation
 
 ```bash
-git clone https://github.com/BjornS98/IOS-Location-spoofer
-cd your-repo-name
+git clone https://github.com/BjornS98/IOS-Location-spoofer.git
+cd IOS-Location-spoofer
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install PyQt5 PyQtWebEngine pymobiledevice3
