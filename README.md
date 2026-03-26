@@ -61,6 +61,8 @@ This project relies on development-style device services. On modern iOS versions
 git clone https://github.com/BjornS98/IOS-Location-spoofer.git
 cd IOS-Location-spoofer
 python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install PyQt5 PyQtWebEngine pymobiledevice3
 
 ````
 
